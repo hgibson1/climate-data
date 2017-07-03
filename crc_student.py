@@ -66,7 +66,7 @@ with open('CRCEmployeePermit.csv') as csvfile:
 			crc_employee_driver_data['status'].append(row['status'])
 		except:
 			employee_skipped = employee_skipped + 1
-			print "skipped: {}".format(row['zipcode'])
+			#print "skipped: {}".format(row['zipcode'])
 
 
 #Match EPA data to CRC Driver data
@@ -96,7 +96,7 @@ for i in range(0, len(crc_employee_driver_data['status'])):
 		#print "found: {} {}".format(crc_employee_driver_data['make-model'][i], crc_employee_driver_data['year'][i])
 	except:
 		employee_skipped = employee_skipped + 1
-		print "skipped: {} {}".format(crc_employee_driver_data['make-model'][i], crc_employee_driver_data['year'][i])
+		#print "skipped: {} {}".format(crc_employee_driver_data['make-model'][i], crc_employee_driver_data['year'][i])
 
 
 #Write out formated CSV
@@ -141,7 +141,7 @@ with open('CRCStudentPermit.csv') as csvfile:
 			crc_student_driver_data['zipcode'].append(row['zipcode'])
 		except:
 			student_skipped = student_skipped + 1
-			print "skipped: {}".format(row['zipcode'])
+			#print "skipped: {}".format(row['zipcode'])
 
 
 #Match EPA Data to student Driver Data
@@ -171,7 +171,7 @@ for i in range(0, len(crc_student_driver_data['status'])):
 		#print "found: {} {}".format(crc_employee_driver_data['make-model'][i], crc_employee_driver_data['year'][i])
 	except:
 		student_skipped = student_skipped + 1
-		print "skipped: {} {}".format(crc_student_driver_data['make-model'][i], crc_student_driver_data['year'][i])
+		#print "skipped: {} {}".format(crc_student_driver_data['make-model'][i], crc_student_driver_data['year'][i])
 
 
 #Write out formated CSV
@@ -218,7 +218,7 @@ with open('MEDEmployeePermit.csv') as csvfile:
 			med_employee_fuel_data['combined'].append(employee_combined_proportion)
 		except:
 			employee_skipped = employee_skipped + 1
-			print "skipped: {}".format(row['zipcode'])
+			#print "skipped: {}".format(row['zipcode'])
 
 #Write to csv file
 with open('med_employee.csv', 'w') as csvfile:
@@ -259,7 +259,7 @@ with open('MEDStudentPermit.csv') as csvfile:
 			med_student_fuel_data['combined'].append(student_combined_proportion)
 		except:
 			student_skipped = student_skipped + 1
-			print "skipped: {}".format(row['zipcode'])
+			#print "skipped: {}".format(row['zipcode'])
 
 #Write to csv file
 with open('med_student.csv', 'w') as csvfile:
@@ -275,8 +275,32 @@ with open('med_student.csv', 'w') as csvfile:
 			'combined':med_student_fuel_data['combined'][i]
 		})
 
-#Print out number of lbs of CO2 produced
 
+#Summary
+#Print out number of lbs of CO2 produced
+#CRC Employees
+crc_employee_co2 = 0
+for i, d in enumerate(crc_employee_fuel_data['distance']):
+	crc_employee_co2 = crc_employee_co2 + 20 * d * crc_employee_fuel_data['city'][i]
+print "crc employee co2 production: {} lb".format(crc_employee_co2) 
+
+#CRC Students
+crc_student_co2 = 0
+for i, d in enumerate(crc_student_fuel_data['distance']):
+	crc_student_co2 = crc_student_co2 + 20 * d * crc_student_fuel_data['city'][i]
+print "crc student co2 production: {} lb".format(crc_student_co2) 
+
+#Med Employee
+med_employee_co2 = 0
+for i, d in enumerate(med_employee_fuel_data['distance']):
+	med_employee_co2 = med_employee_co2 + 20 * d * med_employee_fuel_data['city'][i]
+print "med employee co2 production: {} lb".format(med_employee_co2) 
+
+#Med Students
+med_student_co2 = 0
+for i, d in enumerate(med_student_fuel_data['distance']):
+	med_student_co2 = med_student_co2 + 20 * d * med_student_fuel_data['city'][i]
+print "med student co2 production: {} lb".format(med_student_co2) 
 
 #Determine number of student and employee cars that were not included in calculation due to bad zipcode or unfound car data
 part_student_skipped = float(student_skipped)/(float(len(med_student_fuel_data['status'])) + float(len(crc_student_fuel_data['status'])) + float(student_skipped))
