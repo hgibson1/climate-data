@@ -342,6 +342,7 @@ distances['max'] = max(driver_data['distance']) #Used for debugging not calculat
 distances['max_part_time'] = max([distance for i, distance in enumerate(driver_data['distance']) if "PART" in driver_data['status'][i]])
 distances['max_full_time'] = max([distance for i, distance in enumerate(driver_data['distance']) if "PART" not in driver_data['status'][i]])
 
+#Upper Error
 upper_error = {}
 upper_error['best_guess'] = metrics['best_guess'] + (6 * distances['max_part_time']/fuel_economies['max_combined'] * part_time_skipped + 10 * distances['max_full_time']/fuel_economies['max_combined'] * full_time_skipped) * CO2_per_gallon
 upper_error['city_10'] = metrics['city_10'] + 10 * distances['max']/fuel_economies['max_city'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
@@ -356,6 +357,7 @@ distances['min'] = min(driver_data['distance'])
 distances['min_part_time'] = min([distance for i, distance in enumerate(driver_data['distance']) if "PART" in driver_data['status'][i]])
 distances['min_full_time'] = min([distance for i, distance in enumerate(driver_data['distance']) if "PART" not in driver_data['status'][i]])
 
+#Lower Error
 lower_error = {}
 lower_error['best_guess'] = metrics['best_guess'] + (6 * distances['min_part_time']/fuel_economies['min_combined'] * part_time_skipped + 10 * distances['min_full_time']/fuel_economies['min_combined'] * full_time_skipped) * CO2_per_gallon
 lower_error['city_10'] = metrics['city_10'] + 10 * distances['min']/fuel_economies['min_city'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
