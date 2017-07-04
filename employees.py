@@ -196,7 +196,7 @@ distances['max_part_time'] = max([distance for i, distance in enumerate(driver_d
 distances['max_full_time'] = max([distance for i, distance in enumerate(driver_data['distance']) if "PART" not in driver_data['status'][i]])
 
 upper_error = {}
-upper_error['best_guess'] = metrics['best_guess'] + (6 * distances['max_part_time']/fuel_economies['max_combined'] * part_time_skipped + 10 * distances['max_full_time']/fuel_economies['max_combined'] * full_time_skipped) * CO2_per_gallon
+upper_error['best_guess'] = metrics['best_guess'] + (6 * distances['max_part_time']/fuel_economies['max_city'] * part_time_skipped + 10 * distances['max_full_time']/fuel_economies['max_city'] * full_time_skipped) * CO2_per_gallon
 upper_error['city_10'] = metrics['city_10'] + 10 * distances['max']/fuel_economies['max_city'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
 upper_error['combined_10'] = metrics['combined_10'] + 10 * distances['max']/fuel_economies['max_combined'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
 upper_error['highway_10'] = metrics['highway_10'] + 10 * distances['max']/fuel_economies['max_highway'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
@@ -216,7 +216,7 @@ distances['min_part_time'] = min([distance for i, distance in enumerate(driver_d
 distances['min_full_time'] = min([distance for i, distance in enumerate(driver_data['distance']) if "PART" not in driver_data['status'][i]])
 
 lower_error = {}
-lower_error['best_guess'] = metrics['best_guess'] + (6 * distances['min_part_time']/fuel_economies['min_combined'] * part_time_skipped + 10 * distances['min_full_time']/fuel_economies['min_combined'] * full_time_skipped) * CO2_per_gallon
+lower_error['best_guess'] = metrics['best_guess'] + (6 * distances['min_part_time']/fuel_economies['min_highway'] * part_time_skipped + 10 * distances['min_full_time']/fuel_economies['min_highway'] * full_time_skipped) * CO2_per_gallon
 lower_error['city_10'] = metrics['city_10'] + 10 * distances['min']/fuel_economies['min_city'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
 lower_error['combined_10'] = metrics['combined_10'] + 10 * distances['min']/fuel_economies['min_combined'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
 lower_error['highway_10'] = metrics['highway_10'] + 10 * distances['min']/fuel_economies['min_highway'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
@@ -245,7 +245,11 @@ for key, value in distances.iteritems():
 	print "distance {}: {}".format(key, value)  
 
 
-
+#Generate graph file
+with open("graph_data.csv", "w") as csvfile:
+	writer = csv.DictWriter(csvfile, fieldnames=['group', 'lower_error', 'metric', 'upper_error'])
+	writer.writeheader()
+	writer.writerow({'group':'crc_employee', 'lower_error':lower_error['best_guess'], 'metric':metrics['best_guess'], 'upper_error':upper_error['best_guess']})
 
 #Read in Medical Campus Employee Data
 #Same as with CRC except that we don't know make/model of car, so fe values are just average of crc data
@@ -393,3 +397,7 @@ for key, value in metrics.iteritems():
 for key, value in distances.iteritems():
 	print "distance {}: {}".format(key, value)  
 
+
+with open("graph_data.csv", "a") as csvfile:
+	writer = csv.DictWriter(csvfile, fieldnames=['group', 'lower_error', 'metric', 'upper_error'])
+	writer.writerow({'group':'med_employee', 'lower_error':lower_error['best_guess'], 'metric':metrics['best_guess'], 'upper_error':upper_error['best_guess']})
