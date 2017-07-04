@@ -105,7 +105,7 @@ with open('budata/CRCStudentPermit.csv') as csvfile:
 
 #Write out formated CSV containing all datapoints
 #This is if someone wants to look at the raw data
-with open('output_csvs/crc_employee_full.csv', 'w') as csvfile:
+with open('output_csvs/crc_student_full.csv', 'w') as csvfile:
 	writer = csv.DictWriter(csvfile, fieldnames=['zipcode', 'make-model', 'year', 'status', 'distance', 'city', 'highway', 'combined'])
 	 
 	for i in range(0, len(driver_data['status'])):
@@ -252,7 +252,7 @@ with open('budata/MEDStudentPermit.csv') as csvfile:
 
 
 #Write to csv file in case someone wants to look at raw data
-with open('output_csvs/med_employee.csv', 'w') as csvfile:
+with open('output_csvs/med_student_full.csv', 'w') as csvfile:
 	writer = csv.DictWriter(csvfile, fieldnames = ['status', 'zipcode', 'distance', 'city', 'highway', 'combined'])
 	for i in range(0, len(driver_data['status'])):
 		writer.writerow({

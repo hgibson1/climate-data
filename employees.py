@@ -42,7 +42,9 @@ for f in files:
 #Read in CRC Employee Data, Calculate distance per trip, match with fuel efficencies
 driver_data = {'zipcode':[], 'make-model':[], 'year':[], 'status':[], 'distance':[], 'city':[], 'highway':[], 'combined':[]}
 
+#Total number of facutly data points read
 total = 0
+#Number of data points skipped because zipcode couldn't be found or car model couldn't be identified 
 full_time_skipped = 0
 part_time_skipped = 0
 
@@ -62,24 +64,26 @@ with open('budata/CRCEmployeePermit.csv') as csvfile:
 			#Calculate Distance Traveled
 			distance = ((69 * abs(BASE_LAT - zip_lat)) ** 2 + (51 * abs(BASE_LONG - zip_long)) ** 2) ** 0.5
 			
-			#Find Fuel Economy based on make and model
+			#Read Fuel Economy based on make and model
 			make_model = "{}{}".format(row['make'], row['model'])
 			make_model = make_model.replace("+AC0", "")
 			make_model = filter(str.isalnum, make_model)
 			make_model = make_model.upper()
 
-			#Get all cars make in year of this car
+			#Get all cars make in year of this car from epa data
 			year_matches = [j for j, x in enumerate(epa_data['year']) if x == row['year']]
 			indecies = []
 			ratios = []
 			#Loop through make-model of cars make in that year
-			#Find make-model that most closely matches matches that make-model
+			#Find make-model in epa data that most closely matches matches make-model read in
 			for year_match in year_matches:
 				ratio = fuzz.ratio(epa_data['make-model'][year_match], make_model)
 				if ratio > 80:
 					ratios.append(ratio)
 					indecies.append(year_match)
 			index = indecies[ratios.index(max(ratios))]
+
+			#Get fuel economies for that make model and add to driver dataset
 			driver_data['city'].append(float(epa_data['city'][index]))
 			driver_data['highway'].append(float(epa_data['highway'][index]))
 			driver_data['combined'].append(float(epa_data['combined'][index]))
@@ -109,7 +113,7 @@ with open('budata/CRCEmployeePermit.csv') as csvfile:
 
 
 #Write out formated CSV containing all datapoints
-#This is if someone wants to look at the raw data
+#This is if someone wants to look at the raw data, mostly for debugging
 with open('output_csvs/crc_employee_full.csv', 'w') as csvfile:
 	writer = csv.DictWriter(csvfile, fieldnames=['zipcode', 'make-model', 'year', 'status', 'distance', 'city', 'highway', 'combined'])
 	 
@@ -129,33 +133,31 @@ with open('output_csvs/crc_employee_full.csv', 'w') as csvfile:
 
 
 #Calculate CO2 Summary data for charles river campus
+#Static value, pounds of co2 release per gallon of gas used
 CO2_per_gallon = 20
 
 #Because cars were skipped, we have to make an estimate of what thier distance/fuel economy was
-#We also don't know the make/model/year of drivers on the medical campus, take the average of crc employee car fuel economies and use that
+#We also don't know the make/model/year of drivers on the medical campus
+#So take the average fuel economies
 fuel_economies = {}
 fuel_economies['avg_city'] = float(sum(driver_data['city']))/float(len(driver_data['city']))
 fuel_economies['avg_highway'] = float(sum(driver_data['highway']))/float(len(driver_data['highway']))
 fuel_economies['avg_combined'] = float(sum(driver_data['combined']))/float(len(driver_data['combined']))
 
-#Average distance traveled per trip of all CRC drivers
+#distances traveled by CRC drivers
 distances = {}
-#Sums
+#Distance sums
 distances['sum'] = float(sum(driver_data['distance']))
-#Average distance traveled per trip of CRC drivers with part time employment status
 distances['sum_part_time'] = float(sum([distance for i, distance in enumerate(driver_data['distance']) if "PART" in driver_data['status'][i]]))
-#Average distance travel per trip of CRC drivers with full time employement status
 distances['sum_full_time'] = float(sum([distance for i, distance in enumerate(driver_data['distance']) if "PART" not in driver_data['status'][i]]))
 
-#Averages
+#Distance averages
 distances['avg'] = float(sum(driver_data['distance']))/float(len(driver_data['distance']))
-#Average distance traveled per trip of CRC drivers with part time employment status
 distances['avg_part_time'] = float(sum([distance for i, distance in enumerate(driver_data['distance']) if "PART" in driver_data['status'][i]])) / float(len([distance for i, distance in enumerate(driver_data['distance']) if "PART" in driver_data['status'][i]]))
-#Average distance travel per trip of CRC drivers with full time employement status
 distances['avg_full_time'] = float(sum([distance for i, distance in enumerate(driver_data['distance']) if "PART" not in driver_data['status'][i]])) / float(len([distance for i, distance in enumerate(driver_data['distance']) if "PART" not in driver_data['status'][i]])) 
 
 
-#Metrics
+#CO2 Metrics
 metrics = {}
 metrics['city_10'] = 0 #highest co2 estimate, assume 10 trips/week with city millage
 metrics['highway_10'] = 0 #10 trips per week with highway millage
@@ -180,8 +182,10 @@ for i, status in enumerate(driver_data['status']):
 		#If full time assume 10 trips per week
 		metrics['best_guess'] = metrics['best_guess'] + (10 * driver_data['distance'][i]/driver_data['combined'][i]) * CO2_per_gallon
 
+
 #Here is where the estimating comes in
-#Upper error is going to be the value calculated in the above for loop plus the max of fe * distance * #skipped
+#Upper error is going to be the value calculated in the above for loop plus the min measured fuel economy * max measured distance * #skipped
+#Min fuel economy because lowest fuel economy produces highest co2
 fuel_economies['max_combined'] = min(driver_data['combined']) #Max co2 production is going to be min fuel economy
 fuel_economies['max_city'] = min(driver_data['city'])
 fuel_economies['max_highway'] = min(driver_data['highway'])
@@ -200,7 +204,8 @@ upper_error['city_6'] = metrics['city_6'] + 6 * distances['max']/fuel_economies[
 upper_error['combined_6'] = metrics['combined_6'] + 6 * distances['max']/fuel_economies['max_combined'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
 upper_error['highway_6'] = metrics['highway_6'] + 6 * distances['max']/fuel_economies['max_highway'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
  
-#Lower error is going to be the value calculated in the above for loop plus the min of fe * distance * #skipped
+#Lower error is going to be the value calculated in the above for loop plus the max of fe * min distance * #skipped
+#Max fuel economy will produce min co2
 fuel_economies['min_combined'] = max(driver_data['combined']) #Max co2 production is going to be min fuel economy
 fuel_economies['min_city'] = max(driver_data['city'])
 fuel_economies['min_highway'] = max(driver_data['highway'])
@@ -219,7 +224,8 @@ lower_error['city_6'] = metrics['city_6'] + 6 * distances['min']/fuel_economies[
 lower_error['combined_6'] = metrics['combined_6'] + 6 * distances['min']/fuel_economies['min_combined'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
 lower_error['highway_6'] = metrics['highway_6'] + 6 * distances['min']/fuel_economies['min_highway'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
 
-#the metric is going to be the value calculated in above for loop plus the average of fe * distance * #skipped
+
+#the actual co2 metric is going to be the value calculated in above for loop plus the average of fe * average of distance * #skipped
 metrics['best_guess'] = metrics['best_guess'] + (6 * distances['avg_part_time']/fuel_economies['avg_combined'] * part_time_skipped + 10 * distances['avg_full_time']/fuel_economies['avg_combined'] * full_time_skipped) * CO2_per_gallon
 metrics['city_10'] = metrics['city_10'] + 10 * distances['avg']/fuel_economies['avg_city'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
 metrics['highway_10'] = metrics['highway_10'] + 10 * distances['avg']/fuel_economies['avg_highway'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
@@ -227,6 +233,8 @@ metrics['city_6'] = metrics['city_6'] + 6 * distances['avg']/fuel_economies['avg
 metrics['highway_6'] = metrics['highway_6'] + 6 * distances['avg']/fuel_economies['avg_highway'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
 metrics['combined_10'] = metrics['combined_10'] + 10 * distances['avg']/fuel_economies['avg_combined'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
 metrics['combined_6'] = metrics['combined_6'] + 6 * distances['avg']/fuel_economies['avg_combined'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+
+
 
 #Print Summary Data
 print "CRC Summary Data"
@@ -240,6 +248,7 @@ for key, value in distances.iteritems():
 
 
 #Read in Medical Campus Employee Data
+#Same as with CRC except that we don't know make/model of car, so fe values are just average of crc data
 driver_data = {'status':[], 'zipcode':[], 'distance':[], 'city':[], 'highway':[], 'combined':[]}
 
 #Lat and long of medical campus
