@@ -63,7 +63,9 @@ with open('budata/CRCEmployeePermit.csv') as csvfile:
 			
 			#Calculate Distance Traveled
 			distance = ((69 * abs(BASE_LAT - zip_lat)) ** 2 + (51 * abs(BASE_LONG - zip_long)) ** 2) ** 0.5
-			
+			#Throw out distances of more then 200 miles
+			if distance > 200:
+				raise ValueError			
 			#Read Fuel Economy based on make and model
 			make_model = "{}{}".format(row['make'], row['model'])
 			make_model = make_model.replace("+AC0", "")
@@ -145,42 +147,42 @@ fuel_economies['avg_highway'] = float(sum(driver_data['highway']))/float(len(dri
 fuel_economies['avg_combined'] = float(sum(driver_data['combined']))/float(len(driver_data['combined']))
 
 #distances traveled by CRC drivers
-distances = {}
+crc_distances = {}
 #Distance sums
-distances['sum'] = float(sum(driver_data['distance']))
-distances['sum_part_time'] = float(sum([distance for i, distance in enumerate(driver_data['distance']) if "PART" in driver_data['status'][i]]))
-distances['sum_full_time'] = float(sum([distance for i, distance in enumerate(driver_data['distance']) if "PART" not in driver_data['status'][i]]))
+crc_distances['sum'] = float(sum(driver_data['distance']))
+crc_distances['sum_part_time'] = float(sum([distance for i, distance in enumerate(driver_data['distance']) if "PART" in driver_data['status'][i]]))
+crc_distances['sum_full_time'] = float(sum([distance for i, distance in enumerate(driver_data['distance']) if "PART" not in driver_data['status'][i]]))
 
 #Distance averages
-distances['avg'] = float(sum(driver_data['distance']))/float(len(driver_data['distance']))
-distances['avg_part_time'] = float(sum([distance for i, distance in enumerate(driver_data['distance']) if "PART" in driver_data['status'][i]])) / float(len([distance for i, distance in enumerate(driver_data['distance']) if "PART" in driver_data['status'][i]]))
-distances['avg_full_time'] = float(sum([distance for i, distance in enumerate(driver_data['distance']) if "PART" not in driver_data['status'][i]])) / float(len([distance for i, distance in enumerate(driver_data['distance']) if "PART" not in driver_data['status'][i]])) 
+crc_distances['avg'] = float(sum(driver_data['distance']))/float(len(driver_data['distance']))
+crc_distances['avg_part_time'] = float(sum([distance for i, distance in enumerate(driver_data['distance']) if "PART" in driver_data['status'][i]])) / float(len([distance for i, distance in enumerate(driver_data['distance']) if "PART" in driver_data['status'][i]]))
+crc_distances['avg_full_time'] = float(sum([distance for i, distance in enumerate(driver_data['distance']) if "PART" not in driver_data['status'][i]])) / float(len([distance for i, distance in enumerate(driver_data['distance']) if "PART" not in driver_data['status'][i]])) 
 
 
 #CO2 Metrics
-metrics = {}
-metrics['city_10'] = 0 #highest co2 estimate, assume 10 trips/week with city millage
-metrics['highway_10'] = 0 #10 trips per week with highway millage
-metrics['combined_10'] = 0 #10 trips/week with combined millage
-metrics['city_6'] = 0 #6 trips/week with city millage
-metrics['highway_6'] = 0 #lowest co2 estimate, 6 trips per week with highway millage
-metrics['combined_6'] = 0 #6 trips per week with combined millage
-metrics['best_guess'] = 0 #best estimate, uses combined fe, 6 trips/week if employee has part time status, 10 trips/week if full time
+crc_med_metrics = {}
+crc_med_metrics['city_10'] = 0 #highest co2 estimate, assume 10 trips/week with city millage
+crc_med_metrics['highway_10'] = 0 #10 trips per week with highway millage
+crc_med_metrics['combined_10'] = 0 #10 trips/week with combined millage
+crc_med_metrics['city_6'] = 0 #6 trips/week with city millage
+crc_med_metrics['highway_6'] = 0 #lowest co2 estimate, 6 trips per week with highway millage
+crc_med_metrics['combined_6'] = 0 #6 trips per week with combined millage
+crc_med_metrics['best_guess'] = 0 #best estimate, uses combined fe, 6 trips/week if employee has part time status, 10 trips/week if full time
 
-#Populate metrics
+#Populate med_metrics
 for i, status in enumerate(driver_data['status']):
-	metrics['city_10'] = metrics['city_10'] + (10 * driver_data['distance'][i]/driver_data['city'][i]) * CO2_per_gallon
-	metrics['highway_10'] = metrics['highway_10'] + (10 * driver_data['distance'][i]/driver_data['highway'][i]) * CO2_per_gallon
-	metrics['city_6'] = metrics['city_6'] + (6 * driver_data['distance'][i]/driver_data['city'][i]) * CO2_per_gallon
-	metrics['highway_6'] = metrics['highway_6'] + (6 * driver_data['distance'][i]/driver_data['highway'][i]) * CO2_per_gallon
-	metrics['combined_10'] = metrics['combined_10'] + (10 * driver_data['distance'][i]/driver_data['combined'][i]) * CO2_per_gallon
-	metrics['combined_6'] = metrics['combined_6'] + (6 * driver_data['distance'][i]/driver_data['combined'][i]) * CO2_per_gallon
+	crc_med_metrics['city_10'] = crc_med_metrics['city_10'] + (10 * driver_data['distance'][i]/driver_data['city'][i]) * CO2_per_gallon
+	crc_med_metrics['highway_10'] = crc_med_metrics['highway_10'] + (10 * driver_data['distance'][i]/driver_data['highway'][i]) * CO2_per_gallon
+	crc_med_metrics['city_6'] = crc_med_metrics['city_6'] + (6 * driver_data['distance'][i]/driver_data['city'][i]) * CO2_per_gallon
+	crc_med_metrics['highway_6'] = crc_med_metrics['highway_6'] + (6 * driver_data['distance'][i]/driver_data['highway'][i]) * CO2_per_gallon
+	crc_med_metrics['combined_10'] = crc_med_metrics['combined_10'] + (10 * driver_data['distance'][i]/driver_data['combined'][i]) * CO2_per_gallon
+	crc_med_metrics['combined_6'] = crc_med_metrics['combined_6'] + (6 * driver_data['distance'][i]/driver_data['combined'][i]) * CO2_per_gallon
 	if "PART" in status:
 		#If part time assume 6 trips per week
-		metrics['best_guess'] = metrics['best_guess'] + (6 * driver_data['distance'][i]/driver_data['combined'][i]) * CO2_per_gallon
+		crc_med_metrics['best_guess'] = crc_med_metrics['best_guess'] + (6 * driver_data['distance'][i]/driver_data['combined'][i]) * CO2_per_gallon
 	else:
 		#If full time assume 10 trips per week
-		metrics['best_guess'] = metrics['best_guess'] + (10 * driver_data['distance'][i]/driver_data['combined'][i]) * CO2_per_gallon
+		crc_med_metrics['best_guess'] = crc_med_metrics['best_guess'] + (10 * driver_data['distance'][i]/driver_data['combined'][i]) * CO2_per_gallon
 
 
 #Here is where the estimating comes in
@@ -191,18 +193,18 @@ fuel_economies['max_city'] = min(driver_data['city'])
 fuel_economies['max_highway'] = min(driver_data['highway'])
 
 #Distance Maxes
-distances['max'] = max(driver_data['distance']) #Used for debugging not calculations
-distances['max_part_time'] = max([distance for i, distance in enumerate(driver_data['distance']) if "PART" in driver_data['status'][i]])
-distances['max_full_time'] = max([distance for i, distance in enumerate(driver_data['distance']) if "PART" not in driver_data['status'][i]])
+crc_distances['max'] = max(driver_data['distance']) #Used for debugging not calculations
+crc_distances['max_part_time'] = max([distance for i, distance in enumerate(driver_data['distance']) if "PART" in driver_data['status'][i]])
+crc_distances['max_full_time'] = max([distance for i, distance in enumerate(driver_data['distance']) if "PART" not in driver_data['status'][i]])
 
-upper_error = {}
-upper_error['best_guess'] = metrics['best_guess'] + (6 * distances['max_part_time']/fuel_economies['max_city'] * part_time_skipped + 10 * distances['max_full_time']/fuel_economies['max_city'] * full_time_skipped) * CO2_per_gallon
-upper_error['city_10'] = metrics['city_10'] + 10 * distances['max']/fuel_economies['max_city'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
-upper_error['combined_10'] = metrics['combined_10'] + 10 * distances['max']/fuel_economies['max_combined'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
-upper_error['highway_10'] = metrics['highway_10'] + 10 * distances['max']/fuel_economies['max_highway'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
-upper_error['city_6'] = metrics['city_6'] + 6 * distances['max']/fuel_economies['max_city'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
-upper_error['combined_6'] = metrics['combined_6'] + 6 * distances['max']/fuel_economies['max_combined'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
-upper_error['highway_6'] = metrics['highway_6'] + 6 * distances['max']/fuel_economies['max_highway'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+crc_med_upper_error = {}
+crc_med_upper_error['best_guess'] = crc_med_metrics['best_guess'] + (6 * crc_distances['max_part_time']/fuel_economies['max_city'] * part_time_skipped + 10 * crc_distances['max_full_time']/fuel_economies['max_city'] * full_time_skipped) * CO2_per_gallon
+crc_med_upper_error['city_10'] = crc_med_metrics['city_10'] + 10 * crc_distances['max']/fuel_economies['max_city'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+crc_med_upper_error['combined_10'] = crc_med_metrics['combined_10'] + 10 * crc_distances['max']/fuel_economies['max_combined'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+crc_med_upper_error['highway_10'] = crc_med_metrics['highway_10'] + 10 * crc_distances['max']/fuel_economies['max_highway'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+crc_med_upper_error['city_6'] = crc_med_metrics['city_6'] + 6 * crc_distances['max']/fuel_economies['max_city'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+crc_med_upper_error['combined_6'] = crc_med_metrics['combined_6'] + 6 * crc_distances['max']/fuel_economies['max_combined'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+crc_med_upper_error['highway_6'] = crc_med_metrics['highway_6'] + 6 * crc_distances['max']/fuel_economies['max_highway'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
  
 #Lower error is going to be the value calculated in the above for loop plus the max of fe * min distance * #skipped
 #Max fuel economy will produce min co2
@@ -211,45 +213,45 @@ fuel_economies['min_city'] = max(driver_data['city'])
 fuel_economies['min_highway'] = max(driver_data['highway'])
 
 #Distance mins
-distances['min'] = min(driver_data['distance'])
-distances['min_part_time'] = min([distance for i, distance in enumerate(driver_data['distance']) if "PART" in driver_data['status'][i]])
-distances['min_full_time'] = min([distance for i, distance in enumerate(driver_data['distance']) if "PART" not in driver_data['status'][i]])
+crc_distances['min'] = min(driver_data['distance'])
+crc_distances['min_part_time'] = min([distance for i, distance in enumerate(driver_data['distance']) if "PART" in driver_data['status'][i]])
+crc_distances['min_full_time'] = min([distance for i, distance in enumerate(driver_data['distance']) if "PART" not in driver_data['status'][i]])
 
-lower_error = {}
-lower_error['best_guess'] = metrics['best_guess'] + (6 * distances['min_part_time']/fuel_economies['min_highway'] * part_time_skipped + 10 * distances['min_full_time']/fuel_economies['min_highway'] * full_time_skipped) * CO2_per_gallon
-lower_error['city_10'] = metrics['city_10'] + 10 * distances['min']/fuel_economies['min_city'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
-lower_error['combined_10'] = metrics['combined_10'] + 10 * distances['min']/fuel_economies['min_combined'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
-lower_error['highway_10'] = metrics['highway_10'] + 10 * distances['min']/fuel_economies['min_highway'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
-lower_error['city_6'] = metrics['city_6'] + 6 * distances['min']/fuel_economies['min_city'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
-lower_error['combined_6'] = metrics['combined_6'] + 6 * distances['min']/fuel_economies['min_combined'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
-lower_error['highway_6'] = metrics['highway_6'] + 6 * distances['min']/fuel_economies['min_highway'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+crc_med_lower_error = {}
+crc_med_lower_error['best_guess'] = crc_med_metrics['best_guess'] + (6 * crc_distances['min_part_time']/fuel_economies['min_highway'] * part_time_skipped + 10 * crc_distances['min_full_time']/fuel_economies['min_highway'] * full_time_skipped) * CO2_per_gallon
+crc_med_lower_error['city_10'] = crc_med_metrics['city_10'] + 10 * crc_distances['min']/fuel_economies['min_city'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+crc_med_lower_error['combined_10'] = crc_med_metrics['combined_10'] + 10 * crc_distances['min']/fuel_economies['min_combined'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+crc_med_lower_error['highway_10'] = crc_med_metrics['highway_10'] + 10 * crc_distances['min']/fuel_economies['min_highway'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+crc_med_lower_error['city_6'] = crc_med_metrics['city_6'] + 6 * crc_distances['min']/fuel_economies['min_city'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+crc_med_lower_error['combined_6'] = crc_med_metrics['combined_6'] + 6 * crc_distances['min']/fuel_economies['min_combined'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+crc_med_lower_error['highway_6'] = crc_med_metrics['highway_6'] + 6 * crc_distances['min']/fuel_economies['min_highway'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
 
 
 #the actual co2 metric is going to be the value calculated in above for loop plus the average of fe * average of distance * #skipped
-metrics['best_guess'] = metrics['best_guess'] + (6 * distances['avg_part_time']/fuel_economies['avg_combined'] * part_time_skipped + 10 * distances['avg_full_time']/fuel_economies['avg_combined'] * full_time_skipped) * CO2_per_gallon
-metrics['city_10'] = metrics['city_10'] + 10 * distances['avg']/fuel_economies['avg_city'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
-metrics['highway_10'] = metrics['highway_10'] + 10 * distances['avg']/fuel_economies['avg_highway'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
-metrics['city_6'] = metrics['city_6'] + 6 * distances['avg']/fuel_economies['avg_city'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
-metrics['highway_6'] = metrics['highway_6'] + 6 * distances['avg']/fuel_economies['avg_highway'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
-metrics['combined_10'] = metrics['combined_10'] + 10 * distances['avg']/fuel_economies['avg_combined'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
-metrics['combined_6'] = metrics['combined_6'] + 6 * distances['avg']/fuel_economies['avg_combined'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+crc_med_metrics['best_guess'] = crc_med_metrics['best_guess'] + (6 * crc_distances['avg_part_time']/fuel_economies['avg_combined'] * part_time_skipped + 10 * crc_distances['avg_full_time']/fuel_economies['avg_combined'] * full_time_skipped) * CO2_per_gallon
+crc_med_metrics['city_10'] = crc_med_metrics['city_10'] + 10 * crc_distances['avg']/fuel_economies['avg_city'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+crc_med_metrics['highway_10'] = crc_med_metrics['highway_10'] + 10 * crc_distances['avg']/fuel_economies['avg_highway'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+crc_med_metrics['city_6'] = crc_med_metrics['city_6'] + 6 * crc_distances['avg']/fuel_economies['avg_city'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+crc_med_metrics['highway_6'] = crc_med_metrics['highway_6'] + 6 * crc_distances['avg']/fuel_economies['avg_highway'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+crc_med_metrics['combined_10'] = crc_med_metrics['combined_10'] + 10 * crc_distances['avg']/fuel_economies['avg_combined'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+crc_med_metrics['combined_6'] = crc_med_metrics['combined_6'] + 6 * crc_distances['avg']/fuel_economies['avg_combined'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
 
 
 
 #Print Summary Data
 print "CRC Summary Data"
 print "Total {}, full time skipped {}, part time skipped {}".format(total, full_time_skipped, part_time_skipped)
-for key, value in metrics.iteritems():
-	print "metric {}: lower limit {}, metric {}, higher limit {}".format(key, lower_error[key], value, upper_error[key])
-for key, value in distances.iteritems():
+for key, value in crc_med_metrics.iteritems():
+	print "metric {}: lower limit {}, metric {}, higher limit {}".format(key, crc_med_lower_error[key], value, crc_med_upper_error[key])
+for key, value in crc_distances.iteritems():
 	print "distance {}: {}".format(key, value)  
 
 
 #Generate graph file
 with open("graph_data.csv", "w") as csvfile:
-	writer = csv.DictWriter(csvfile, fieldnames=['group', 'lower_error', 'metric', 'upper_error'])
+	writer = csv.DictWriter(csvfile, fieldnames=['group', 'med_lower_error', 'metric', 'med_upper_error'])
 	writer.writeheader()
-	writer.writerow({'group':'crc_employee', 'lower_error':lower_error['best_guess'], 'metric':metrics['best_guess'], 'upper_error':upper_error['best_guess']})
+	writer.writerow({'group':'crc_employee', 'med_lower_error':crc_med_lower_error['best_guess'], 'metric':crc_med_metrics['best_guess'], 'med_upper_error':crc_med_upper_error['best_guess']})
 
 #Read in Medical Campus Employee Data
 #Same as with CRC except that we don't know make/model of car, so fe values are just average of crc data
@@ -271,7 +273,9 @@ with open('budata/MEDEmployeePermit.csv') as csvfile:
 			zip_lat = zipcodes['lat'][zipcodes['zipcode'].index(row['zipcode'])]
 			zip_long = zipcodes['long'][zipcodes['zipcode'].index(row['zipcode'])]
 			distance = ((69 * abs(BASE_LAT - zip_lat)) ** 2 + (51 * abs(BASE_LONG - zip_long)) ** 2) ** 0.5
-			
+			#Throw out distances of more than 200 miles 
+			if distance > 200:
+				raise ValueError
 			#Determine fuel economies
 			driver_data['city'].append(fuel_economies['avg_city'])
 			driver_data['highway'].append(fuel_economies['avg_highway'])
@@ -326,29 +330,29 @@ distances['avg_full_time'] = float(sum([distance for i, distance in enumerate(dr
 
 
 #Metrics
-metrics = {}
-metrics['city_10'] = 0 #highest co2 estimate, assume 10 trips/week with city millage
-metrics['highway_10'] = 0 #10 trips per week with highway millage
-metrics['combined_10'] = 0 #10 trips/week with combined millage
-metrics['city_6'] = 0 #6 trips/week with city millage
-metrics['highway_6'] = 0 #lowest co2 estimate, 6 trips per week with highway millage
-metrics['combined_6'] = 0 #6 trips per week with combined millage
-metrics['best_guess'] = 0 #best estimate, uses combined fe, 6 trips/week if employee has part time status, 10 trips/week if full time
+med_metrics = {}
+med_metrics['city_10'] = 0 #highest co2 estimate, assume 10 trips/week with city millage
+med_metrics['highway_10'] = 0 #10 trips per week with highway millage
+med_metrics['combined_10'] = 0 #10 trips/week with combined millage
+med_metrics['city_6'] = 0 #6 trips/week with city millage
+med_metrics['highway_6'] = 0 #lowest co2 estimate, 6 trips per week with highway millage
+med_metrics['combined_6'] = 0 #6 trips per week with combined millage
+med_metrics['best_guess'] = 0 #best estimate, uses combined fe, 6 trips/week if employee has part time status, 10 trips/week if full time
 
-#Populate metrics
+#Populate med_metrics
 for i, status in enumerate(driver_data['status']):
-	metrics['city_10'] = metrics['city_10'] + (10 * driver_data['distance'][i]/driver_data['city'][i]) * CO2_per_gallon
-	metrics['highway_10'] = metrics['highway_10'] + (10 * driver_data['distance'][i]/driver_data['highway'][i]) * CO2_per_gallon
-	metrics['city_6'] = metrics['city_6'] + (6 * driver_data['distance'][i]/driver_data['city'][i]) * CO2_per_gallon
-	metrics['highway_6'] = metrics['highway_6'] + (6 * driver_data['distance'][i]/driver_data['highway'][i]) * CO2_per_gallon
-	metrics['combined_10'] = metrics['combined_10'] + (10 * driver_data['distance'][i]/driver_data['combined'][i]) * CO2_per_gallon
-	metrics['combined_6'] = metrics['combined_6'] + (6 * driver_data['distance'][i]/driver_data['combined'][i]) * CO2_per_gallon
+	med_metrics['city_10'] = med_metrics['city_10'] + (10 * driver_data['distance'][i]/driver_data['city'][i]) * CO2_per_gallon
+	med_metrics['highway_10'] = med_metrics['highway_10'] + (10 * driver_data['distance'][i]/driver_data['highway'][i]) * CO2_per_gallon
+	med_metrics['city_6'] = med_metrics['city_6'] + (6 * driver_data['distance'][i]/driver_data['city'][i]) * CO2_per_gallon
+	med_metrics['highway_6'] = med_metrics['highway_6'] + (6 * driver_data['distance'][i]/driver_data['highway'][i]) * CO2_per_gallon
+	med_metrics['combined_10'] = med_metrics['combined_10'] + (10 * driver_data['distance'][i]/driver_data['combined'][i]) * CO2_per_gallon
+	med_metrics['combined_6'] = med_metrics['combined_6'] + (6 * driver_data['distance'][i]/driver_data['combined'][i]) * CO2_per_gallon
 	if "PART" in status:
 		#If part time assume 6 trips per week
-		metrics['best_guess'] = metrics['best_guess'] + (6 * driver_data['distance'][i]/driver_data['combined'][i]) * CO2_per_gallon
+		med_metrics['best_guess'] = med_metrics['best_guess'] + (6 * driver_data['distance'][i]/driver_data['combined'][i]) * CO2_per_gallon
 	else:
 		#If full time assume 10 trips per week
-		metrics['best_guess'] = metrics['best_guess'] + (10 * driver_data['distance'][i]/driver_data['combined'][i]) * CO2_per_gallon
+		med_metrics['best_guess'] = med_metrics['best_guess'] + (10 * driver_data['distance'][i]/driver_data['combined'][i]) * CO2_per_gallon
 
 #Distance Mins
 distances['max'] = max(driver_data['distance']) #Used for debugging not calculations
@@ -356,14 +360,14 @@ distances['max_part_time'] = max([distance for i, distance in enumerate(driver_d
 distances['max_full_time'] = max([distance for i, distance in enumerate(driver_data['distance']) if "PART" not in driver_data['status'][i]])
 
 #Upper Error
-upper_error = {}
-upper_error['best_guess'] = metrics['best_guess'] + (6 * distances['max_part_time']/fuel_economies['max_combined'] * part_time_skipped + 10 * distances['max_full_time']/fuel_economies['max_combined'] * full_time_skipped) * CO2_per_gallon
-upper_error['city_10'] = metrics['city_10'] + 10 * distances['max']/fuel_economies['max_city'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
-upper_error['combined_10'] = metrics['combined_10'] + 10 * distances['max']/fuel_economies['max_combined'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
-upper_error['highway_10'] = metrics['highway_10'] + 10 * distances['max']/fuel_economies['max_highway'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
-upper_error['city_6'] = metrics['city_6'] + 6 * distances['max']/fuel_economies['max_city'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
-upper_error['combined_6'] = metrics['combined_6'] + 6 * distances['max']/fuel_economies['max_combined'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
-upper_error['highway_6'] = metrics['highway_6'] + 6 * distances['max']/fuel_economies['max_highway'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+med_upper_error = {}
+med_upper_error['best_guess'] = med_metrics['best_guess'] + (6 * distances['max_part_time']/fuel_economies['max_combined'] * part_time_skipped + 10 * distances['max_full_time']/fuel_economies['max_combined'] * full_time_skipped) * CO2_per_gallon
+med_upper_error['city_10'] = med_metrics['city_10'] + 10 * distances['max']/fuel_economies['max_city'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+med_upper_error['combined_10'] = med_metrics['combined_10'] + 10 * distances['max']/fuel_economies['max_combined'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+med_upper_error['highway_10'] = med_metrics['highway_10'] + 10 * distances['max']/fuel_economies['max_highway'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+med_upper_error['city_6'] = med_metrics['city_6'] + 6 * distances['max']/fuel_economies['max_city'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+med_upper_error['combined_6'] = med_metrics['combined_6'] + 6 * distances['max']/fuel_economies['max_combined'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+med_upper_error['highway_6'] = med_metrics['highway_6'] + 6 * distances['max']/fuel_economies['max_highway'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
  
 #Distance mins
 distances['min'] = min(driver_data['distance'])
@@ -371,33 +375,33 @@ distances['min_part_time'] = min([distance for i, distance in enumerate(driver_d
 distances['min_full_time'] = min([distance for i, distance in enumerate(driver_data['distance']) if "PART" not in driver_data['status'][i]])
 
 #Lower Error
-lower_error = {}
-lower_error['best_guess'] = metrics['best_guess'] + (6 * distances['min_part_time']/fuel_economies['min_combined'] * part_time_skipped + 10 * distances['min_full_time']/fuel_economies['min_combined'] * full_time_skipped) * CO2_per_gallon
-lower_error['city_10'] = metrics['city_10'] + 10 * distances['min']/fuel_economies['min_city'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
-lower_error['combined_10'] = metrics['combined_10'] + 10 * distances['min']/fuel_economies['min_combined'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
-lower_error['highway_10'] = metrics['highway_10'] + 10 * distances['min']/fuel_economies['min_highway'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
-lower_error['city_6'] = metrics['city_6'] + 6 * distances['min']/fuel_economies['min_city'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
-lower_error['combined_6'] = metrics['combined_6'] + 6 * distances['min']/fuel_economies['min_combined'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
-lower_error['highway_6'] = metrics['highway_6'] + 6 * distances['min']/fuel_economies['min_highway'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+med_lower_error = {}
+med_lower_error['best_guess'] = med_metrics['best_guess'] + (6 * distances['min_part_time']/fuel_economies['min_combined'] * part_time_skipped + 10 * distances['min_full_time']/fuel_economies['min_combined'] * full_time_skipped) * CO2_per_gallon
+med_lower_error['city_10'] = med_metrics['city_10'] + 10 * distances['min']/fuel_economies['min_city'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+med_lower_error['combined_10'] = med_metrics['combined_10'] + 10 * distances['min']/fuel_economies['min_combined'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+med_lower_error['highway_10'] = med_metrics['highway_10'] + 10 * distances['min']/fuel_economies['min_highway'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+med_lower_error['city_6'] = med_metrics['city_6'] + 6 * distances['min']/fuel_economies['min_city'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+med_lower_error['combined_6'] = med_metrics['combined_6'] + 6 * distances['min']/fuel_economies['min_combined'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+med_lower_error['highway_6'] = med_metrics['highway_6'] + 6 * distances['min']/fuel_economies['min_highway'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
 
 #the metric is going to be the value calculated in above for loop plus the average of fe * distance * #skipped
-metrics['best_guess'] = metrics['best_guess'] + (6 * distances['avg_part_time']/fuel_economies['avg_combined'] * part_time_skipped + 10 * distances['avg_full_time']/fuel_economies['avg_combined'] * full_time_skipped) * CO2_per_gallon
-metrics['city_10'] = metrics['city_10'] + 10 * distances['avg']/fuel_economies['avg_city'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
-metrics['highway_10'] = metrics['highway_10'] + 10 * distances['avg']/fuel_economies['avg_highway'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
-metrics['city_6'] = metrics['city_6'] + 6 * distances['avg']/fuel_economies['avg_city'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
-metrics['highway_6'] = metrics['highway_6'] + 6 * distances['avg']/fuel_economies['avg_highway'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
-metrics['combined_10'] = metrics['combined_10'] + 10 * distances['avg']/fuel_economies['avg_combined'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
-metrics['combined_6'] = metrics['combined_6'] + 6 * distances['avg']/fuel_economies['avg_combined'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+med_metrics['best_guess'] = med_metrics['best_guess'] + (6 * distances['avg_part_time']/fuel_economies['avg_combined'] * part_time_skipped + 10 * distances['avg_full_time']/fuel_economies['avg_combined'] * full_time_skipped) * CO2_per_gallon
+med_metrics['city_10'] = med_metrics['city_10'] + 10 * distances['avg']/fuel_economies['avg_city'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+med_metrics['highway_10'] = med_metrics['highway_10'] + 10 * distances['avg']/fuel_economies['avg_highway'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+med_metrics['city_6'] = med_metrics['city_6'] + 6 * distances['avg']/fuel_economies['avg_city'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+med_metrics['highway_6'] = med_metrics['highway_6'] + 6 * distances['avg']/fuel_economies['avg_highway'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+med_metrics['combined_10'] = med_metrics['combined_10'] + 10 * distances['avg']/fuel_economies['avg_combined'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
+med_metrics['combined_6'] = med_metrics['combined_6'] + 6 * distances['avg']/fuel_economies['avg_combined'] * (part_time_skipped + full_time_skipped) * CO2_per_gallon
 
 #Print Summary Data
 print "Med Summary Data"
 print "Total {}, full time skipped {}, part time skipped {}".format(total, full_time_skipped, part_time_skipped)
-for key, value in metrics.iteritems():
-	print "metric {}: lower limit {}, metric {}, higher limit {}".format(key, lower_error[key], value, upper_error[key])
+for key, value in med_metrics.iteritems():
+	print "metric {}: lower limit {}, metric {}, higher limit {}".format(key, med_lower_error[key], value, med_upper_error[key])
 for key, value in distances.iteritems():
 	print "distance {}: {}".format(key, value)  
 
 
 with open("graph_data.csv", "a") as csvfile:
-	writer = csv.DictWriter(csvfile, fieldnames=['group', 'lower_error', 'metric', 'upper_error'])
-	writer.writerow({'group':'med_employee', 'lower_error':lower_error['best_guess'], 'metric':metrics['best_guess'], 'upper_error':upper_error['best_guess']})
+	writer = csv.DictWriter(csvfile, fieldnames=['group', 'med_lower_error', 'metric', 'med_upper_error'])
+	writer.writerow({'group':'med_employee', 'med_lower_error':med_lower_error['best_guess'], 'metric':med_metrics['best_guess'], 'med_upper_error':med_upper_error['best_guess']})

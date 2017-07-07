@@ -60,7 +60,9 @@ with open('budata/CRCStudentPermit.csv') as csvfile:
 			
 			#Calculate Distance Traveled
 			distance = ((69 * abs(BASE_LAT - zip_lat)) ** 2 + (51 * abs(BASE_LONG - zip_long)) ** 2) ** 0.5
-			
+			#Throw out distances greater than 200
+			if distance > 200:
+				raise ValueError	
 			#Find Fuel Economy based on make and model
 			make_model = "{}{}".format(row['make'], row['model'])
 			make_model = make_model.replace("+AC0", "")
@@ -239,7 +241,9 @@ with open('budata/MEDStudentPermit.csv') as csvfile:
 			zip_lat = zipcodes['lat'][zipcodes['zipcode'].index(row['zipcode'])]
 			zip_long = zipcodes['long'][zipcodes['zipcode'].index(row['zipcode'])]
 			distance = ((69 * abs(BASE_LAT - zip_lat)) ** 2 + (51 * abs(BASE_LONG - zip_long)) ** 2) ** 0.5
-			
+			#Throw out distances > 200
+			if distance > 200:
+				raise ValueError
 			#Determine fuel economies
 			driver_data['city'].append(fuel_economies['avg_city'])
 			driver_data['highway'].append(fuel_economies['avg_highway'])
